@@ -254,32 +254,51 @@ describe('ZapBondage', () => {
     100,
     "https://test.io",
     false)
+    
 
    
   });
-
-  it('TOKEN_DOT_FACTORY_3 - initializeCurve() - Check curve initialization', async function () {
-    let factory = await dotTokenFactory.deploy(
-      coordinator.address,
-      tokenFactory.address,
-      publicKey,
-      title
-    );
-    let tx = await factory.initializeCurve(
+  it('TOKEN_DOT_FACTORY_FACTORY_2 - constructor() - Check bonding to a  factory', async function () {
+    
+    await nftDotFactoryFactoryInstance.deployFactory(publicKey, title) 
+   let r=await nftDotFactoryFactoryInstance.getFactories()
+   let instance=await dotTokenFactory.attach(r[0])
+   await instance.initializeCurve(
     ethers.utils.formatBytes32String("Test Token"), 
     ethers.utils.formatBytes32String("Test"),
     piecewiseFunction,
-    100,
+    1,
     "https://test.io",
-    false);
-    tx = await tx.wait();
-    console.log(tx);
+    false)
+    
+    await zapToken.allocate(subscriber.address, 10000);
+    await zapToken.connect(subscriber).approve(instance.address, 10000);
+    let tx=await instance.connect(subscriber).bond(ethers.utils.formatBytes32String("Test Token"));
+    tx=await tx.wait()
+    let nftAddress=await instance.curves(ethers.utils.formatBytes32String("Test Token"))
+    //console.log(tx)
+    let NFT=await factoryToken.attach(nftAddress)
+    let balance=await NFT.balanceOf(subscriber.address)
+    await expect(
+      balance
+    ).to.equal(1);
+  });
+  /**  it('TOKEN_DOT_FACTORY_3 - initializeCurve() - Check curve initialization', async function () {
+     let factory = await dotTokenFactory.deploy(
+       coordinator.address,
+      tokenFactory.address,
+       publicKey,
+       title
+     );
+     let tx = await factory.initializeCurve(specifier, title, piecewiseFunction,price,metadata,false);
+     tx = await tx.wait();
+     console.log(tx);
 
     let dotTokenCreatedEvent = findEvent(tx.events, 'DotTokenCreated');
     console.log(dotTokenCreatedEvent);
     await expect(dotTokenCreatedEvent).to.be.not.equal(null);
   });
-
+ **/
   it('TOKEN_DOT_FACTORY_4 - initializeCurve() - Exception thrown if curve specifier already exists', async function () {
     let factory = await dotTokenFactory.deploy(
       coordinator.address,
